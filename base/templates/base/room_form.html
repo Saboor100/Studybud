@@ -64,7 +64,11 @@
 
           
             <div class="form__action">
+              {% if room and room.id %}
               <a class="btn btn--dark" href="{% url 'room' room.id %}">Cancel</a>
+              {% else %}
+              <a class="btn btn--dark" href="{% url 'home' %}">Cancel</a>
+              {% endif %}
               <button class="btn btn--main" type="submit">Submit</button>
             </div>
           </form>

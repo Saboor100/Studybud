@@ -6,7 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .models import Room, Topic, message , User
-from .forms import Roomform, Userform
+from .forms import RoomForm, UserForm , MessageForm
 
 
 
@@ -72,15 +72,43 @@ def rooms_view(request, pk):
     participants = room.participants.all()
 
     if request.method == 'POST':
-        message_comment = message.objects.create(
-            user = request.user,
-            room = room,
-            body = request.POST.get('body')
-        )
-        room.participants.add(request.user)
-        return redirect('room', pk=room.id)
-    context = {'room': room, 'room_messages':room_messages, 'participants':participants}
-    return render(request, 'base/room.html',context)
+        form = MessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.user = request.user
+            message.room = room
+
+            # ✅ Explicitly assign the file if uploaded
+            if request.FILES.get('file'):
+                message.file = request.FILES.get('file')
+
+            # ✅ Save if there's either a body or a file
+            if message.body or message.file:
+                print(f"Saving message with body: {message.body}, file: {message.file}")  # Debugging
+                message.save()
+            else:
+                print("No body or file detected.")
+
+            room.participants.add(request.user)
+            return redirect('room', pk=room.id)
+        else:
+            print("Form errors:", form.errors)  # Debugging form errors
+    else:
+        form = MessageForm()
+
+    # ✅ Debugging: Print all messages in the room
+    for msg in room_messages:
+        print(f"Message: {msg.body}, File: {msg.file}")
+
+    context = {
+        'room': room,
+        'room_messages': room_messages,
+        'participants': participants,
+        'form': form
+    }
+    return render(request, 'base/room.html', context)
+
+
 
 @login_required(login_url='login')
 def userProfile(request, pk):
@@ -93,7 +121,7 @@ def userProfile(request, pk):
 
 @login_required(login_url='login')
 def createRoom(request):
-    form = Roomform()
+    form = RoomForm()
     topics = Topic.objects.all()
     if request.method == 'POST':
         # for creating new topics with name of our choice
@@ -114,7 +142,7 @@ def createRoom(request):
 @login_required(login_url='login')
 def updateRoom(request, pk):
     room = Room.objects.get(id=pk)
-    form = Roomform(instance=room)
+    form = RoomForm(instance=room)
     topics = Topic.objects.all()
     if request.user != room.host:
         return HttpResponse('You are not allowed here')
@@ -157,9 +185,9 @@ def deleteMessage(request, pk):
 @login_required(login_url='login')
 def updateUser(request):
     user = request.user
-    form = Userform(instance=user)
+    form = UserForm(instance=user)
     if request.method == 'POST':
-        form = Userform (request.POST, request.FILES , instance=user)
+        form = UserForm (request.POST, request.FILES , instance=user)
         if form.is_valid():
             form.save()
             return redirect('user-profile', pk=user.id)
