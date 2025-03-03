@@ -33,6 +33,14 @@ INSTALLED_APPS = [
 ]
 AUTH_USER_MODEL = 'base.User'
 
+CHANNELS_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+ASGI_APPLICATION = 'discord.asgi.application'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

@@ -5,9 +5,10 @@ from django.contrib.auth.decorators import login_required #for create room page 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .models import Room, Topic, message , User
-from .forms import RoomForm, UserForm , MessageForm
-
+from django.contrib.auth.models import User
+from .models import Room, Topic, message 
+from .forms import RoomForm, MessageForm , CustomUserCreationForm , Userform
+from django.contrib.auth import get_user_model
 
 
 # rooms =[
@@ -41,9 +42,9 @@ def logoutUser(request):
     logout(request)
     return redirect('home')
 def registerPage(request):
-    form = UserCreationForm()
+    form = CustomUserCreationForm()
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             user.username = user.username.lower()
@@ -51,6 +52,7 @@ def registerPage(request):
             login(request, user)
             return redirect('home')
         else:
+            print(form.errors)
             messages.error(request, 'An error occured during registration')
     return render(request, 'base/login_register.html',{'form':form})
 def home(request):
@@ -112,6 +114,7 @@ def rooms_view(request, pk):
 
 @login_required(login_url='login')
 def userProfile(request, pk):
+    User = get_user_model()
     user = User.objects.get(id=pk)
     rooms = user.room_set.all()
     room_messages = user.message_set.all()
@@ -185,9 +188,9 @@ def deleteMessage(request, pk):
 @login_required(login_url='login')
 def updateUser(request):
     user = request.user
-    form = UserForm(instance=user)
+    form = Userform(instance=user)
     if request.method == 'POST':
-        form = UserForm (request.POST, request.FILES , instance=user)
+        form = Userform (request.POST, request.FILES , instance=user)
         if form.is_valid():
             form.save()
             return redirect('user-profile', pk=user.id)

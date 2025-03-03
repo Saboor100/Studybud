@@ -86,6 +86,41 @@
 .send-button:hover {
   background-color: #218838;
 }
+.room__topRight {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between buttons */
+}
+
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #444; /* Dark background */
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.icon-button:hover {
+  background: #555; /* Slightly lighter on hover */
+}
+
+.call-button {
+  padding: 4px 8px;
+  background-color: #28a745; /* Green color for call button */
+  color: white;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s ease;
+}
+
+.call-button:hover {
+  background-color: #218838; /* Darker green on hover */
+}
 </style>
     <main class="profile-page layout layout--2">
       <div class="container">
@@ -137,9 +172,13 @@
                   <path
                     d="M27.314 6.019l-1.333-1.333-9.98 9.981-9.981-9.981-1.333 1.333 9.981 9.981-9.981 9.98 1.333 1.333 9.981-9.98 9.98 9.98 1.333-1.333-9.98-9.98 9.98-9.981z"
                   ></path>
+
                 </svg>
+                
               </a>
+              <button id="StartCall" class="call-button">Start Call</button>
             </div>
+            
             {% endif %}
           </div>
           <div class="room__box scroll">
@@ -256,6 +295,61 @@
     fileChosen.textContent = 'No file chosen';
   }
 });
+
+// WEbRTC
+
+const roomname = "{{room.id}}";
+const socket = new WebSocket(`ws://${window.location.host}/ws/call/${roomname}/`);
+const peer = new RTCPeerConnection({
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+});
+
+peer.onicecandidate = (event) => {
+  if (event.candidate) {
+    socket.send(JSON.stringify({ candidate: event.candidate }));
+  }
+};
+
+peer.ontrack = (event) => {
+  document.getElementById("remotevideo").srcObject = event.streams[0];
+};
+
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.offer) {
+    peer.setRemoteDescription(new RTCSessionDescription(data.offer));
+    peer.createAnswer().then((answer) => {
+      peer.setLocalDescription(answer);
+      socket.send(JSON.stringify({ answer }));
+    });
+  } else if (data.answer) {
+    peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+  } else if (data.candidate) {
+    peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+  }
+};
+
+// Function to start call
+function startcall() {
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+      document.getElementById("localvideo").srcObject = stream;
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+
+      // Now create and send the offer
+      peer.createOffer().then((offer) => {
+        peer.setLocalDescription(offer);
+        socket.send(JSON.stringify({ offer }));
+      });
+    })
+    .catch((error) => {
+      console.error("Error accessing media devices.", error);
+    });
+}
+
+// Ensure button actually calls startcall()
+document.getElementById("StartCall").addEventListener("click", startcall);
+  // End function calling script
     </script>
     
 {% endblock %}
