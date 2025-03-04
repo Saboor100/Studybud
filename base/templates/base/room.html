@@ -331,20 +331,8 @@ socket.onmessage = (event) => {
 
 // Function to start call
 function startcall() {
-  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      document.getElementById("localvideo").srcObject = stream;
-      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
-
-      // Now create and send the offer
-      peer.createOffer().then((offer) => {
-        peer.setLocalDescription(offer);
-        socket.send(JSON.stringify({ offer }));
-      });
-    })
-    .catch((error) => {
-      console.error("Error accessing media devices.", error);
-    });
+    const roomname = "{{ room.id }}"; // Get the room name
+    window.open("{% url 'video-call' %}?roomname=" + roomname, '_blank'); // Open new tab
 }
 
 // Ensure button actually calls startcall()

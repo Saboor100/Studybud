@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #1c1c1c;
+        }
+        .users-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #2c2c2c;
+            color: white;
+            padding: 20px;
+        }
+        video {
+            max-width: 100%;
+            max-height: 80vh;
+            background-color: black;
+        }
+        #localvideo {
+            margin-bottom: 20px;
+        }
+        #users-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #users-list li {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+        #end-call-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #end-call-btn:hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="localvideo" autoplay muted></video>
+        <video id="remotevideo" autoplay></video>
+    </div>
+    <div class="users-container">
+        <h2>Users in Call</h2>
+        <ul id="users-list">
+            <!-- Users will be dynamically added here -->
+        </ul>
+        <button id="end-call-btn">End Call</button>
+    </div>
+
+    <script>
+        const roomname = new URLSearchParams(window.location.search).get('roomname');
+        const socket = new WebSocket(`ws://${window.location.host}/ws/call/${roomname}/`);
+        const peer = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        peer.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.send(JSON.stringify({ candidate: event.candidate }));
+            }
+        };
+
+        peer.ontrack = (event) => {
+            document.getElementById("remotevideo").srcObject = event.streams[0];
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.offer) {
+                peer.setRemoteDescription(new RTCSessionDescription(data.offer));
+                peer.createAnswer().then((answer) => {
+                    peer.setLocalDescription(answer);
+                    socket.send(JSON.stringify({ answer }));
+                });
+            } else if (data.answer) {
+                peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.candidate) {
+                peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } else if (data.users) {
+                updateUsersList(data.users);
+            }
+        };
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+                document.getElementById("localvideo").srcObject = stream;
+                stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+                peer.createOffer().then((offer) => {
+                    peer.setLocalDescription(offer);
+                    socket.send(JSON.stringify({ offer }));
+                });
+            })
+            .catch((error) => {
+                console.error("Error accessing media devices.", error);
+            });
+
+        function updateUsersList(users) {
+            const usersList = document.getElementById("users-list");
+            usersList.innerHTML = users.map(user => `<li>${user}</li>`).join('');
+        }
+
+        document.getElementById("end-call-btn").addEventListener("click", () => {
+            socket.close();
+            peer.close();
+            window.location.href = "/"; // Redirect to home or another page
+        });
+    </script>
+</body>
+</html>

@@ -207,4 +207,7 @@ def activityPage(request):
     room_messages = message.objects.all()
     return render(request, 'base/activity.html', {'room_messages':room_messages})
 
+def video_call_view(request):
+    return render(request, 'base/video_call.html')
+
    
