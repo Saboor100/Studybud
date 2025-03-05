@@ -43,6 +43,14 @@
         #users-list li {
             padding: 10px;
             border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+        }
+        #users-list img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
         }
         #end-call-btn {
             margin-top: 20px;
@@ -63,10 +71,18 @@
         <video id="localvideo" autoplay muted></video>
         <video id="remotevideo" autoplay></video>
     </div>
+    
     <div class="users-container">
-        <h2>Users in Call</h2>
+        <h2>Users in Call ({{ participants.count }})</h2>
         <ul id="users-list">
-            <!-- Users will be dynamically added here -->
+            {% for user in participants %}
+            <li>
+                <img src="{{ user.avatar.url }}" alt="Profile Picture">
+                <a href="{% url 'user-profile' user.id %}" target="_blank" style="color: white; text-decoration: none;">
+                    {{ user.username }}
+                </a>
+            </li>
+            {% endfor %}
         </ul>
         <button id="end-call-btn">End Call</button>
     </div>
@@ -120,13 +136,20 @@
 
         function updateUsersList(users) {
             const usersList = document.getElementById("users-list");
-            usersList.innerHTML = users.map(user => `<li>${user}</li>`).join('');
+            usersList.innerHTML = users.map(user => `
+                <li>
+                    <img src="${user.avatar}" alt="Profile Picture">
+                    <a href="/profile/${user.id}" target="_blank" style="color: white; text-decoration: none;">
+                        ${user.username}
+                    </a>
+                </li>
+            `).join('');
         }
 
         document.getElementById("end-call-btn").addEventListener("click", () => {
             socket.close();
             peer.close();
-            window.location.href = "/"; // Redirect to home or another page
+            window.close(); // Close the current tab instead of redirecting
         });
     </script>
 </body>

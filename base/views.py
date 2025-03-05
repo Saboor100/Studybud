@@ -208,6 +208,15 @@ def activityPage(request):
     return render(request, 'base/activity.html', {'room_messages':room_messages})
 
 def video_call_view(request):
-    return render(request, 'base/video_call.html')
+    room_id = request.GET.get('roomname')  # Get the room ID from the URL query string
+    if not room_id:
+        return HttpResponse("Room ID is required", status=400)
 
-   
+    room = get_object_or_404(Room, id=room_id)
+    participants = room.participants.all()  # Fetch participants in the room
+
+    context = {
+        'room': room,
+        'participants': participants,
+    }
+    return render(request, 'base/video_call.html', context)
