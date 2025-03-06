@@ -202,10 +202,12 @@ def topicsPage(request):
     topics = Topic.objects.filter(name__icontains=q)
     return render(request, 'base/topics.html', {'topics':topics})
 
-
 def activityPage(request):
-    room_messages = message.objects.all()
-    return render(request, 'base/activity.html', {'room_messages':room_messages})
+    room_messages = message.objects.all()  # Fetch all messages
+    # Debugging: Print message details
+    for msg in room_messages:
+        print(f"Message ID: {msg.id}, Body: {msg.body}, File: {msg.file}")
+    return render(request, 'base/activity.html', {'room_messages': room_messages})
 
 def video_call_view(request):
     room_id = request.GET.get('roomname')  # Get the room ID from the URL query string

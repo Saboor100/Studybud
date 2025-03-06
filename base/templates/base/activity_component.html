@@ -29,9 +29,24 @@
         {% endif %}
       </div>
       <div class="activities__boxContent">
-        <p>replied to post “<a href="{% url 'room' message.room.id %}">{{message.room}}</a>”</p>
+        <p>replied to post “<a href="{% url 'room' message.room.id %}">{{ message.room }}</a>”</p>
         <div class="activities__boxRoomContent">
-          {{message.body}}
+          {% if message.body %}
+            <p>{{ message.body }}</p>
+          {% endif %}
+          {% if message.file %}  <!-- Check if the message has a file -->
+            <div class="file-link">
+              <a href="{{ message.file.url }}" target="_blank">
+                {% if message.file.name|lower|slice:"-4:" == ".jpg" or message.file.name|lower|slice:"-5:" == ".jpeg" or message.file.name|lower|slice:"-4:" == ".png" %}
+                  <!-- Display image if file is an image -->
+                  <img src="{{ message.file.url }}" alt="Uploaded Image" style="max-width: 100px; max-height: 100px;">
+                {% else %}
+                  <!-- Display download link for non-image files -->
+                  <p><a href="{{ message.file.url }}" target="_blank">Download File</a></p>
+                {% endif %}
+              </a>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
