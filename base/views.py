@@ -222,3 +222,5 @@ def video_call_view(request):
         'participants': participants,
     }
     return render(request, 'base/video_call.html', context)
+
+#<-----END----->
