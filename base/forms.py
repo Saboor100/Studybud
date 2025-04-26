@@ -22,7 +22,7 @@ class Userform(forms.ModelForm):
         model = User
         fields = ['avatar', 'username', 'email', 'bio']
 
-class MessageForm(forms.ModelForm):  # Correct definition
+class MessageForm(forms.ModelForm): 
     class Meta:
         model = message
         fields = ['body', 'file']
